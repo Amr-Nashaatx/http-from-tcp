@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -15,11 +16,31 @@ func main() {
 	}
 
 	buf := make([]byte, 8)
+	var line string
 
 	for {
 		n, readErr := f.Read(buf)
 		if n > 0 {
-			fmt.Printf("Read: %s\n", string(buf[:n]))
+			tmp := string(buf[:n])
+
+			parts := strings.Split(tmp, "\n")
+			// if read string contains no new line "\n"
+			// we just concat the line string
+			if len(parts) == 1 {
+				line += parts[0]
+				continue
+			}
+			// if read string contains multiple new line character "\n"
+			// we add each part and print the whole line string and reset it, for each part except the last one we ignore it.
+			for i := range len(parts) {
+				if i == len(parts)-1 {
+					break
+				}
+				line = line + parts[i]
+				fmt.Printf("read: %s\n", line)
+				line = ""
+			}
+
 		}
 		if readErr != nil {
 			if errors.Is(readErr, io.EOF) {
