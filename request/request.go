@@ -2,9 +2,11 @@ package request
 
 import (
 	"errors"
-	"fmt"
 	"io"
 )
+
+const parserDone = 2
+const parserInit = 1
 
 type Request struct {
 	RequestLine RequestLine
@@ -16,55 +18,44 @@ type RequestLine struct {
 	HttpVersion   string
 }
 
-func NewRequest() *Request {
-	return &Request{state: 1}
-}
 func (r *Request) parse(data []byte) (int, error) {
 	var nRead int
 	var err error
-	switch r.state {
-	case 1:
-		reqLine, n, parseErr := parseRequestLine(data)
-		if parseErr != nil {
-			return 0, parseErr
-		}
-		if n == 0 {
-			return 0, nil
-		}
-		nRead = n
-		err = parseErr
-		r.RequestLine = *reqLine
-		r.state = 2
-	case 2:
-		return 0, fmt.Errorf("error: trying to read data in a done state")
-	default:
-		return 0, fmt.Errorf("error: unknown state")
-
+	reqLine, n, parseErr := parseRequestLine(data)
+	if parseErr != nil {
+		return 0, parseErr
 	}
+	if n == 0 {
+		return 0, nil
+	}
+	nRead = n
+	err = parseErr
+	r.RequestLine = *reqLine
+	r.state = 2
 
 	return nRead, err
 }
 
-func RequestFromReader(reader io.Reader) (*Request, error) {
+func read(reader io.Reader, acc *[]byte) error {
 	readBuffer := make([]byte, 8)
-	acc := make([]byte, 0)
-	req := NewRequest()
-	for {
-		nRead, err := reader.Read(readBuffer)
-		acc = append(acc, readBuffer[:nRead]...)
-		if errors.Is(err, io.EOF) {
-			fmt.Println("reached eof")
-			break
-		}
-		n, parseErr := req.parse(acc)
+	nRead, err := reader.Read(readBuffer)
+	*acc = append(*acc, readBuffer[:nRead]...)
+	if errors.Is(err, io.EOF) {
+		return err
+	}
+	return err
+}
+func RequestFromReader(reader io.Reader) (*Request, error) {
+	req := &Request{state: parserInit}
+	data := make([]byte, 0)
+	read(reader, &data)
+	for req.state != parserDone {
+		n, parseErr := req.parse(data)
 		if parseErr != nil {
-			fmt.Println(parseErr)
 			return nil, parseErr
 		}
 		if n == 0 {
-			continue
-		} else {
-			break
+			read(reader, &data)
 		}
 	}
 	return req, nil
