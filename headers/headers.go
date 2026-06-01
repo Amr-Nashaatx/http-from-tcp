@@ -28,11 +28,14 @@ func (h Headers) Parse(data []byte) (n int, done bool, err error) {
 
 	// extract field name and field value
 	parts := strings.SplitN(string(data[:clrfPos]), ":", 2)
-	fieldName := parts[0]
+	if len(parts) < 2 {
+		return 0, false, fmt.Errorf("Invalid header format: missing colon separator")
+	}
+	fieldName := strings.ToLower(parts[0])
 	fieldValue := strings.Trim(parts[1], " ")
 
-	// field name should not contain leading or trailing spaces before colon
-	if strings.HasPrefix(fieldName, " ") || strings.HasSuffix(fieldName, " ") {
+	// field name should not contain any spaces
+	if strings.Contains(fieldName, " ") {
 		return 0, false, fmt.Errorf("Invalid field name")
 	}
 
@@ -42,9 +45,13 @@ func (h Headers) Parse(data []byte) (n int, done bool, err error) {
 			return 0, false, fmt.Errorf("Invalid token %s, in field name", token)
 		}
 	}
-	// ensure field name starts with capital and then all lowercase
-	fieldName = string(fieldName[0]) + strings.ToLower(fieldName[1:])
 
-	h[fieldName] = fieldValue
-	return len(data) - len(clrf), false, nil
+	// check if the field name exists on headers map, if so we append the field value to it.
+	if h[fieldName] != "" {
+		h[fieldName] = h[fieldName] + ", " + fieldValue
+	} else {
+		h[fieldName] = fieldValue
+	}
+
+	return clrfPos + 2, false, nil
 }

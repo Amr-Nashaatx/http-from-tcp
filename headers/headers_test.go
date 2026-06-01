@@ -13,7 +13,7 @@ func TestHeaders(t *testing.T) {
 	n, done, err := headers.Parse(data)
 	assert.NoError(t, err)
 	assert.NotNil(t, headers)
-	assert.Equal(t, "localhost:42069", headers["Host"])
+	assert.Equal(t, "localhost:42069", headers["host"])
 	assert.Equal(t, 23, n)
 	assert.False(t, done)
 
@@ -31,7 +31,7 @@ func TestHeaders(t *testing.T) {
 	n, done, err = headers.Parse(data)
 	assert.NoError(t, err)
 	assert.NotNil(t, headers)
-	assert.Equal(t, "localhost:42069", headers["Host"])
+	assert.Equal(t, "localhost:42069", headers["host"])
 	assert.Equal(t, len(data)-len([]byte("\r\n")), n)
 	assert.False(t, done)
 
@@ -48,11 +48,25 @@ func TestHeaders(t *testing.T) {
 	n, done, err = headers.Parse(data)
 	assert.NoError(t, err)
 	assert.NotNil(t, headers)
-	assert.Equal(t, "localhost:42069", headers["Host"])
+	assert.Equal(t, "localhost:42069", headers["host"])
 	assert.Equal(t, len(data)-len([]byte("\r\n")), n)
 	assert.False(t, done)
 
 	n, done, err = headers.Parse([]byte("Content-Type: application/json \r\n\r\n"))
-	assert.Equal(t, "application/json", headers["Content-type"])
-	assert.Equal(t, "localhost:42069", headers["Host"])
+	assert.Equal(t, "application/json", headers["content-type"])
+	assert.Equal(t, "localhost:42069", headers["host"])
+
+	// multiple values for a header
+	headers = NewHeaders()
+	data = []byte("Set-Person: amr-nashaat\r\n")
+	headers.Parse(data)
+	assert.Equal(t, "amr-nashaat", headers["set-person"])
+
+	data = []byte("Set-Person: strike-without-warning\r\n")
+	headers.Parse(data)
+	assert.Equal(t, "amr-nashaat, strike-without-warning", headers["set-person"])
+
+	data = []byte("Set-Person: do-what-must-be-done\r\n\r\n")
+	headers.Parse(data)
+	assert.Equal(t, "amr-nashaat, strike-without-warning, do-what-must-be-done", headers["set-person"])
 }

@@ -6,6 +6,12 @@ import (
 	"strings"
 )
 
+type RequestLine struct {
+	Method        string
+	RequestTarget string
+	HttpVersion   string
+}
+
 func parseRequestLine(data []byte) (*RequestLine, int, error) {
 	methods := []string{"GET", "POST", "DELETE", "PUT", "PATCH"}
 
@@ -35,20 +41,4 @@ func parseRequestLine(data []byte) (*RequestLine, int, error) {
 
 	httpVer = strings.TrimPrefix(httpVer, "HTTP/")
 	return &RequestLine{reqMethod, reqTarget, httpVer}, delimPos + 2, nil
-}
-
-func PushChunkToSlice(s []byte, chunk []byte, chunkLength int) []byte {
-	lastElemIdx := slices.Index(s, byte(0))
-	if lastElemIdx == -1 {
-		lastElemIdx = len(s)
-	}
-	if !(len(s)-lastElemIdx >= chunkLength) {
-		addSpace := make([]byte, chunkLength)
-		s = append(s, addSpace...)
-	}
-	for i := range len(chunk) {
-		s[i+lastElemIdx] = chunk[i]
-	}
-
-	return s
 }
