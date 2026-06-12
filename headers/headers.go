@@ -14,11 +14,15 @@ func NewHeaders() Headers {
 	return make(Headers)
 }
 
+func (h Headers) Get(key string) string {
+	return h[strings.ToLower(key)]
+}
+
 func (h Headers) Parse(data []byte) (n int, done bool, err error) {
 	clrf := []byte("\r\n")
 	// does the data starts with clrf? if so we know headers sections is done
 	if bytes.HasPrefix(data, clrf) {
-		return 0, true, nil
+		return 2, true, nil
 	}
 	// does the data contain clrf?, if not we still need more
 	clrfPos := bytes.Index(data, clrf)

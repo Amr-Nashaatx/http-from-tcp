@@ -20,5 +20,8 @@ func main() {
 		panic(conErr)
 	}
 	req, err := request.RequestFromReader(con)
-	fmt.Println(req)
+	fmt.Println(req.RequestLine)
+	fmt.Println(req.Headers)
+
+	socket.Close()
 }
