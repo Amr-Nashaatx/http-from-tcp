@@ -106,6 +106,9 @@ func RequestFromReader(reader io.Reader) (*Request, error) {
 			return nil, parseErr
 		}
 		if n == 0 {
+			if req.state == parserDone {
+				break
+			}
 			readErr := read(reader, &data)
 			/* if buffer exceeds max size, reject the request.
 			this handles the case when sender keeps sending header data
